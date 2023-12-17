@@ -41,6 +41,10 @@ var userSchema = new mongoose.Schema({
         type: Array,
         default: [],
     },
+    isBlooked :{
+        type: Boolean,
+        default:false
+    },
     address: [{
         type: ObjectId,
         ref: "Address"

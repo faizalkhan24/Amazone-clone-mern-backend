@@ -96,11 +96,11 @@ const deleteauser = asyncHandler(async (req, res) => {
 // update a  user
 
 const updateaUser = asyncHandler(async (req, res) => {
-    console.log(req.params);
-    const { id } = await req.params;
+    console.log();
+    const { _id } = await req.user;
     try {
         const updateaUser = await User.findByIdAndUpdate(
-            id,
+            _id,
             {
                 firstname: req?.body?.firstname,
                 lastname: req?.body?.lastname,
@@ -118,5 +118,42 @@ const updateaUser = asyncHandler(async (req, res) => {
     }
 
 });
+
+const blockUser = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    try {
+        const blockUser = await User.findByIdAndUpdate(
+            id,
+            {
+                isBlooked: true,
+            },
+            {
+                new: true,
+            },
+        );
+      res.json({blockUser});
+    } catch (error) {
+        throw new Error(error);
+    }
+});
+
+const unblockUser = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    try {
+        const unblockUser = await User.findByIdAndUpdate(
+            id,
+            {
+                isBlooked: false,
+            },
+            {
+                new: true,
+            },
+        );
+        res.json({unblockUser});
+    } catch (error) {
+        throw new Error(error);
+    }
+});
+
 // Exporting the createUser and loginController functions for use in other parts of the application
-module.exports = { createUser, logincontroller, getAllUsers, getauser, deleteauser, updateaUser };
+module.exports = { createUser, logincontroller, getAllUsers, getauser, deleteauser, updateaUser, blockUser, unblockUser };
