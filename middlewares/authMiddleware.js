@@ -7,12 +7,12 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
 
     if (req?.headers?.authorization?.startsWith("Bearer")) {
         token = req.headers.authorization.split(" ")[1];
-        try {   
+
+        try {
             if (token) {
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                console.log(decoded); // Log decoded payload
-                // ... rest of your logic
-                next(); // Make sure to call next() to proceed to the next middleware
+                const user = await User.findById(decoded?.id);
+                console.log(decoded); 
             }
         } catch (error) {
             console.error('Token verification error:', error);
@@ -23,4 +23,5 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
     }
 });
 
-module.exports = { authMiddleware };
+
+module.exports = {authMiddleware};

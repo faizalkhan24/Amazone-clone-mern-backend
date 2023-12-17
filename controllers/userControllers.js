@@ -1,10 +1,7 @@
 // Importing the generateToken function from jwtTokens configuration
-const { get } = require("mongoose");
-const { generateToken } = require("../config/jwtTokens");
-
-// Importing the User model, asyncHandler, and other necessary modules
 const User = require("../models/userModel");
 const asyncHandler = require("express-async-handler");
+const { generateToken } = require("../config/jwtTokens");
 
 // Controller function to handle user creation
 const createUser = asyncHandler(async (req, res) => {
@@ -34,7 +31,7 @@ const logincontroller = asyncHandler(async (req, res) => {
     const findUser = await User.findOne({ email });
 
     // Check if the user exists, has a valid isPasswordMatched method, and the entered password is correct
-    if (findUser && typeof findUser.isPasswordMatched === 'function' && (await findUser.isPasswordMatched(password))) {
+    if (findUser && (await findUser.isPasswordMatched(password))) {
         // Respond with user details and a generated JWT token
         res.json({
             _id: findUser?._id,
@@ -66,7 +63,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
 
 const getauser = asyncHandler(async (req, res) => {
     console.log(req.params);
-    const { id } = await req.params;
+    const { id } = req.params;
     try {
         const getauser = await User.findById(id);
         res.json(

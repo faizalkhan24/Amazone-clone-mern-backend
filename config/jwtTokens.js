@@ -6,7 +6,7 @@ const generateToken = (id) => {
     // Using the 'jsonwebtoken' library to sign a token with the provided user ID
     // The 'process.env.JWT_SECRECT' is the secret key used to sign the token
     // The token will expire after 3 days ('3d')
-    const token = jwt.sign({ id }, process.env.JWT_SECRECT, { expiresIn: '3d' });
+    const token = jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
     // Returning the generated token
     return token;
@@ -14,3 +14,5 @@ const generateToken = (id) => {
 
 // Exporting the 'generateToken' function for use in other parts of the application
 module.exports = { generateToken };
+
+

@@ -7,6 +7,7 @@ const PORT = process.env.PORT || 4000;
 const authRouter = require("./routes/authRoutes");
 const { notFound, errorHandler } = require("./middlewares/errorHandle");
 
+
 dbConnect();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
