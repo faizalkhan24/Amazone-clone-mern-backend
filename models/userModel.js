@@ -1,5 +1,7 @@
 const mongoose = require('mongoose'); // Erase if already required
 const bcrypt = require("bcrypt");
+const { ObjectId } = mongoose.Types; // Import ObjectId from mongoose
+
 
 // Declare the Schema of the Mongo model
 var userSchema = new mongoose.Schema({
@@ -34,8 +36,25 @@ var userSchema = new mongoose.Schema({
     role: {
         type: String,
         default: "user",
+    },
+    cart: {
+        type: Array,
+        default: [],
+    },
+    address: [{
+        type: ObjectId,
+        ref: "Address"
+    }],
+    wishlist: [{
+        type: ObjectId,
+        ref: "Product"
+    }],
+
+},
+{
+        timestamps: true,
     }
-});
+);
 
 // Password encryption middleware (pre-save hook)
 userSchema.pre("save", async function (next) {
