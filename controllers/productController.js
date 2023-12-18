@@ -8,11 +8,11 @@ const createProduct = asyncHandler(async (req, res) => {
         slug,
         description,
         price,
-        // category,
+        category,
         quantity,
-        // brand,
-        // images,
-        // color,
+        brand,
+        images,
+        color,
     } = req.body;
 
     const newProduct = await Product.create({
@@ -20,11 +20,11 @@ const createProduct = asyncHandler(async (req, res) => {
         slug,
         description,
         price,
-        // category,
+        category,
         quantity,
-        // brand,
-        // images,
-        // color,
+        brand,
+        images,
+        color,
     });
 
     res.status(201).json(newProduct);
