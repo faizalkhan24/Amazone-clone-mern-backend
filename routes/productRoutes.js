@@ -13,7 +13,7 @@ const {
 // Routes for product actions
 
 // Create a new product
-router.post('/create', createProduct);
+router.post('/create', authMiddleware, isAdmin, createProduct);
 
 // Get all products
 router.get('/all', getAllProducts);

@@ -1,11 +1,12 @@
 const Product = require('../models/productModel');
 const asyncHandler = require('express-async-handler');
+const slugify = require("slugify");
+
 
 // Controller function to create a new product
 const createProduct = asyncHandler(async (req, res) => {
     const {
         title,
-        slug,
         description,
         price,
         category,
@@ -14,6 +15,9 @@ const createProduct = asyncHandler(async (req, res) => {
         images,
         color,
     } = req.body;
+
+    // Assuming you have a slugify function
+    const slug = slugify(title);
 
     const newProduct = await Product.create({
         title,
@@ -30,10 +34,16 @@ const createProduct = asyncHandler(async (req, res) => {
     res.status(201).json(newProduct);
 });
 
+
 // Controller function to get all products
 const getAllProducts = asyncHandler(async (req, res) => {
-    const products = await Product.find();
-    res.json(products);
+    try {
+
+        const products = await Product.find();
+        res.json(products);
+    } catch (error){
+        throw new Error(error);
+    }
 });
 
 // Controller function to get a single product by ID
@@ -51,12 +61,37 @@ const getProductById = asyncHandler(async (req, res) => {
 // Controller function to update a product by ID
 const updateProduct = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const updatedProduct = await Product.findByIdAndUpdate(id, req.body, { new: true });
+    const { title, description, price, category, quantity, brand, images, color } = req.body;
 
-    if (updatedProduct) {
-        res.json(updatedProduct);
-    } else {
-        res.status(404).json({ message: 'Product not found' });
+    try {
+        if (title) {
+            req.body.slug = slugify(title, { lower: true });
+        }
+
+        const updatedProduct = await Product.findByIdAndUpdate(
+            id,
+            {
+                title,
+                slug: req.body.slug,
+                description,
+                price,
+                category,
+                quantity,
+                brand,
+                images,
+                color,
+            },
+            { new: true }
+        );
+
+        if (updatedProduct) {
+            res.json(updatedProduct);
+        } else {
+            res.status(404).json({ message: 'Product not found' });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 
