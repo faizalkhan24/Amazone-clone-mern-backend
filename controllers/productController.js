@@ -1,3 +1,4 @@
+const { query } = require('express');
 const Product = require('../models/productModel');
 const asyncHandler = require('express-async-handler');
 const slugify = require("slugify");
@@ -5,52 +6,107 @@ const slugify = require("slugify");
 
 // Controller function to create a new product
 const createProduct = asyncHandler(async (req, res) => {
-    const {
-        title,
-        description,
-        price,
-        category,
-        quantity,
-        brand,
-        images,
-        color,
-    } = req.body;
+    try {
+        const {
+            title,
+            description,
+            price,
+            category,
+            quantity,
+            brand,
+            images,
+            color,
+        } = req.body;
 
-    // Assuming you have a slugify function
-    const slug = slugify(title);
+        if (typeof title === 'string' && title.trim() !== '') {
+            req.body.slug = slugify(title);
+        } else {
+            // Handle the case where req.body.title is not a valid string
+            console.error('Invalid title:', title);
+            return res.status(400).json({ error: 'Invalid title' });
+        }
 
-    const newProduct = await Product.create({
-        title,
-        slug,
-        description,
-        price,
-        category,
-        quantity,
-        brand,
-        images,
-        color,
-    });
+        const newProduct = await Product.create({
+            title,
+            slug: req.body.slug, // Ensure slug is used here
+            description,
+            price,
+            category,
+            quantity,
+            brand,
+            images,
+            color,
+        });
 
-    res.status(201).json(newProduct);
+        res.status(201).json(newProduct);
+    } catch (error) {
+        console.error('Error creating product:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
+
 
 
 // Controller function to get all products
 const getAllProducts = asyncHandler(async (req, res) => {
     try {
+        const queryObject = { ...req.query };
+        const excludeFields = ["page", "sort", "limit", "fields"];
 
-        const products = await Product.find();
+        // Remove excluded fields from the queryObject
+        excludeFields.forEach((el) => delete queryObject[el]);
+
+        // Convert queryObject to string and replace comparison operators
+        let queryString = JSON.stringify(queryObject);
+        queryString = queryString.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+
+        // Parse the modified string back to JSON
+        const parsedQuery = JSON.parse(queryString);
+
+        // Find products based on the modified query
+        let query = Product.find(parsedQuery);
+
+        // Handle sorting
+        if (req.query.sort) {
+            const sortBy = req.query.sort.split(",").join(" ");
+            query = query.sort(sortBy);
+        }
+
+        // Handle pagination
+        if (req.query.page) {
+            try {
+                const page = req.query.page;
+                const limit = req.query.limit;
+                const startIndex = (page - 1) * limit;
+
+                if (startIndex >= (await Product.countDocuments())) {
+                    throw new Error("This page does not exist");
+                }
+
+                query = query.skip(startIndex).limit(limit);
+
+            } catch (error) {
+                console.error('Pagination error:', error);
+                return res.status(500).json({ error: 'Internal Server Error' });
+            }
+        }
+
+        // Execute the query
+        const products = await query;
+
         res.json(products);
-    } catch (error){
-        throw new Error(error);
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
 
 // Controller function to get a single product by ID
 const getProductById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const product = await Product.findById(id);
-    
+
     if (product) {
         res.json(product);
     } else {
@@ -118,4 +174,3 @@ module.exports = {
     deleteProduct,
     // Add other controller functions as needed
 };
- 
