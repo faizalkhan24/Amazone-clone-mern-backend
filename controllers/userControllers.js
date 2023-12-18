@@ -3,6 +3,8 @@ const User = require("../models/userModel");
 const asyncHandler = require("express-async-handler");
 const { generateToken } = require("../config/jwtTokens");
 const validateMongodbId = require("../utils/validateMongodbid");
+const { generateRefreshToken } = require("../config/refreshToken");
+const jwt = require("jsonwebtoken");
 
 // Controller function to handle user creation
 const createUser = asyncHandler(async (req, res) => {
@@ -33,6 +35,21 @@ const logincontroller = asyncHandler(async (req, res) => {
 
     // Check if the user exists, has a valid isPasswordMatched method, and the entered password is correct
     if (findUser && (await findUser.isPasswordMatched(password))) {
+        const refreshToken = await generateRefreshToken(findUser?._id);
+        const updateuser = await User.findByIdAndUpdate(
+            findUser.id,
+            {
+                refreshToken: refreshToken,
+            },
+            { new: true }
+        );
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            maxAge: 72 * 60 * 60 * 1000,
+        });
+
+
+
         // Respond with user details and a generated JWT token
         res.json({
             _id: findUser?._id,
@@ -47,6 +64,28 @@ const logincontroller = asyncHandler(async (req, res) => {
         throw new Error("Invalid password");
     }
 });
+
+
+// handle refresh token
+const handleRefreshToken = asyncHandler(async (req, res) => {
+    const cookie = req.cookies;
+    if (!cookie?.refreshToken) throw new Error("no refresh token in cookie.");
+
+    const refreshToken = cookie.refreshToken;
+
+    const user = await User.findOne({ refreshToken });
+    if (!user) throw new Error("no refresh token present in db");
+
+    jwt.verify(refreshToken, process.env.JWT_SECRET, (err, decoded) => {
+        if (err || user.id !== decoded.id) {
+            throw new Error("There is something wrong with the refresh token");
+        }
+
+        const accessToken = generateToken(user?._id);
+        res.json(accessToken);
+    });
+});
+
 
 //get all user
 
@@ -80,7 +119,7 @@ const getauser = asyncHandler(async (req, res) => {
 // delete a single user
 
 const deleteauser = asyncHandler(async (req, res) => {
- 
+
     const { id } = await req.params;
     validateMongodbId(id);
     try {
@@ -135,7 +174,7 @@ const blockUser = asyncHandler(async (req, res) => {
                 new: true,
             },
         );
-      res.json({blockUser});
+        res.json({ blockUser });
     } catch (error) {
         throw new Error(error);
     }
@@ -154,11 +193,11 @@ const unblockUser = asyncHandler(async (req, res) => {
                 new: true,
             },
         );
-        res.json({unblockUser});
+        res.json({ unblockUser });
     } catch (error) {
         throw new Error(error);
     }
 });
 
 // Exporting the createUser and loginController functions for use in other parts of the application
-module.exports = { createUser, logincontroller, getAllUsers, getauser, deleteauser, updateaUser, blockUser, unblockUser };
+module.exports = { createUser, logincontroller, getAllUsers, getauser, deleteauser, updateaUser, blockUser, unblockUser, handleRefreshToken };
