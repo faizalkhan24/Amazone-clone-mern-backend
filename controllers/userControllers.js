@@ -1,4 +1,4 @@
-// Importing the generateToken function from jwtTokens configuration
+// Importing required modules and functions
 const User = require("../models/userModel");
 const asyncHandler = require("express-async-handler");
 const { generateToken } = require("../config/jwtTokens");
@@ -24,31 +24,31 @@ const createUser = asyncHandler(async (req, res) => {
     }
 });
 
-
 // Controller function for handling user login
-const logincontroller = asyncHandler(async (req, res) => {
+const loginController = asyncHandler(async (req, res) => {
     // Destructuring email and password from the request body
     const { email, password } = req.body;
 
     // Check if a user with the given email exists in the database
     const findUser = await User.findOne({ email });
 
-    // Check if the user exists, has a valid isPasswordMatched method, and the entered password is correct
+    // Check if the user exists and if the entered password is correct
     if (findUser && (await findUser.isPasswordMatched(password))) {
+        // Generate a new refreshToken and update it in the user document
         const refreshToken = await generateRefreshToken(findUser?._id);
-        const updateuser = await User.findByIdAndUpdate(
+        
+        // Update refreshToken in the user document
+        const updatedUser = await User.findByIdAndUpdate(
             findUser.id,
-            {
-                refreshToken: refreshToken,
-            },
+            { refreshToken },
             { new: true }
         );
+
+        // Set refreshToken as a cookie with a 72-hour expiration
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             maxAge: 72 * 60 * 60 * 1000,
         });
-
-
 
         // Respond with user details and a generated JWT token
         res.json({
@@ -61,21 +61,21 @@ const logincontroller = asyncHandler(async (req, res) => {
         });
     } else {
         // If user does not exist or password is invalid, throw an error
-        throw new Error("Invalid password");
+        throw new Error("Invalid email or password");
     }
 });
 
-
-// handle refresh token
+// Handle refresh token
 const handleRefreshToken = asyncHandler(async (req, res) => {
     const cookie = req.cookies;
-    if (!cookie?.refreshToken) throw new Error("no refresh token in cookie.");
+    if (!cookie?.refreshToken) throw new Error("No refresh token in cookie.");
 
     const refreshToken = cookie.refreshToken;
 
     const user = await User.findOne({ refreshToken });
-    if (!user) throw new Error("no refresh token present in db");
+    if (!user) throw new Error("No refresh token present in db");
 
+    // Verify refreshToken and generate a new accessToken
     jwt.verify(refreshToken, process.env.JWT_SECRET, (err, decoded) => {
         if (err || user.id !== decoded.id) {
             throw new Error("There is something wrong with the refresh token");
@@ -86,58 +86,72 @@ const handleRefreshToken = asyncHandler(async (req, res) => {
     });
 });
 
+// Handle logout user
+const handleLogout = asyncHandler(async (req, res) => {
+    const cookie = req.cookies; // Use req.cookies to get cookies
+    if (!cookie?.refreshToken) {
+        throw new Error("No refresh token in cookie");
+    }
 
-//get all user
+    const refreshToken = cookie.refreshToken;
+    const user = await User.findOne({ refreshToken });
 
+    if (!user) {
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: true,
+        });
+        return res.sendStatus(204); // No Content
+    }
+
+    // Assuming you store refreshToken in the user model and need to update it
+    user.refreshToken = "";
+    await user.save();
+
+    res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: true,
+    });
+
+    return res.sendStatus(204); // No Content
+});
+
+// Get all users
 const getAllUsers = asyncHandler(async (req, res) => {
     try {
         const getuser = await User.find();
         res.json(getuser);
-
     } catch (error) {
         throw new Error(error);
     }
 });
 
-// get a single user
-
+// Get a single user
 const getauser = asyncHandler(async (req, res) => {
     const { id } = req.params;
     validateMongodbId(id);
     try {
         const getauser = await User.findById(id);
-        res.json(
-            getauser,
-        )
-    }
-    catch (error) {
+        res.json(getauser);
+    } catch (error) {
         throw new Error(error);
     }
-
 });
 
-// delete a single user
-
+// Delete a single user
 const deleteauser = asyncHandler(async (req, res) => {
-
     const { id } = await req.params;
     validateMongodbId(id);
     try {
         const deleteauser = await User.findByIdAndDelete(id);
-        res.json(
-            deleteauser,
-        )
-    }
-    catch (error) {
+        res.json(deleteauser);
+    } catch (error) {
         throw new Error(error);
     }
-
 });
 
-// update a  user
-
+// Update a user
 const updateaUser = asyncHandler(async (req, res) => {
-    console.log();
     const { _id } = await req.user;
     validateMongodbId(_id);
     try {
@@ -154,13 +168,12 @@ const updateaUser = asyncHandler(async (req, res) => {
             }
         );
         res.json(updateaUser);
-    }
-    catch (error) {
+    } catch (error) {
         throw new Error(error);
     }
-
 });
 
+// Block a user
 const blockUser = asyncHandler(async (req, res) => {
     const { id } = req.params;
     validateMongodbId(id);
@@ -168,11 +181,11 @@ const blockUser = asyncHandler(async (req, res) => {
         const blockUser = await User.findByIdAndUpdate(
             id,
             {
-                isBlooked: true,
+                isBlocked: true,
             },
             {
                 new: true,
-            },
+            }
         );
         res.json({ blockUser });
     } catch (error) {
@@ -180,6 +193,7 @@ const blockUser = asyncHandler(async (req, res) => {
     }
 });
 
+// Unblock a user
 const unblockUser = asyncHandler(async (req, res) => {
     const { id } = req.params;
     validateMongodbId(id);
@@ -187,11 +201,11 @@ const unblockUser = asyncHandler(async (req, res) => {
         const unblockUser = await User.findByIdAndUpdate(
             id,
             {
-                isBlooked: false,
+                isBlocked: false,
             },
             {
                 new: true,
-            },
+            }
         );
         res.json({ unblockUser });
     } catch (error) {
@@ -199,5 +213,16 @@ const unblockUser = asyncHandler(async (req, res) => {
     }
 });
 
-// Exporting the createUser and loginController functions for use in other parts of the application
-module.exports = { createUser, logincontroller, getAllUsers, getauser, deleteauser, updateaUser, blockUser, unblockUser, handleRefreshToken };
+// Exporting all functions for use in other parts of the application
+module.exports = {
+    createUser,
+    loginController,
+    handleRefreshToken,
+    handleLogout,
+    getAllUsers,
+    getauser,
+    deleteauser,
+    updateaUser,
+    blockUser,
+    unblockUser,
+};

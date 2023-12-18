@@ -53,7 +53,7 @@ var userSchema = new mongoose.Schema({
         type: ObjectId,
         ref: "Product"
     }],
-    refreshToken:{
+    refreshToken: {
         type: String,
     },
 
@@ -65,6 +65,7 @@ var userSchema = new mongoose.Schema({
 
 // Password encryption middleware (pre-save hook)
 userSchema.pre("save", async function (next) {
+    // Use bcrypt to hash the password before saving to the database
     const salt = await bcrypt.genSaltSync(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();
