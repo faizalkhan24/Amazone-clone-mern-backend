@@ -2,7 +2,7 @@ const { query } = require('express');
 const Product = require('../models/productModel');
 const asyncHandler = require('express-async-handler');
 const slugify = require("slugify");
-
+const validateMongoDbId = require("../utils/validateMongodbid");
 
 // Controller function to create a new product
 const createProduct = asyncHandler(async (req, res) => {
@@ -26,6 +26,11 @@ const createProduct = asyncHandler(async (req, res) => {
             return res.status(400).json({ error: 'Invalid title' });
         }
 
+        // Validate MongoDB ObjectId
+        if (!validateMongoDbId(req.body.brand)) {
+            return res.status(400).json({ error: 'Invalid brand ID' });
+        }
+
         const newProduct = await Product.create({
             title,
             slug: req.body.slug, // Ensure slug is used here
@@ -33,7 +38,7 @@ const createProduct = asyncHandler(async (req, res) => {
             price,
             category,
             quantity,
-            brand,
+            brand: req.body.brand, // Use validated brand ID
             images,
             color,
         });
@@ -45,9 +50,7 @@ const createProduct = asyncHandler(async (req, res) => {
     }
 });
 
-
-
-// Controller function to get all products
+// Get all products
 const getAllProducts = asyncHandler(async (req, res) => {
     try {
         const queryObject = { ...req.query };
@@ -101,10 +104,15 @@ const getAllProducts = asyncHandler(async (req, res) => {
     }
 });
 
-
-// Controller function to get a single product by ID
+// Get a single product by ID
 const getProductById = asyncHandler(async (req, res) => {
     const { id } = req.params;
+
+    // Validate MongoDB ObjectId
+    if (!validateMongoDbId(id)) {
+        return res.status(400).json({ error: 'Invalid product ID' });
+    }
+
     const product = await Product.findById(id);
 
     if (product) {
@@ -114,10 +122,15 @@ const getProductById = asyncHandler(async (req, res) => {
     }
 });
 
-// Controller function to update a product by ID
+// Update a product by ID
 const updateProduct = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { title, description, price, category, quantity, brand, images, color } = req.body;
+
+    // Validate MongoDB ObjectId
+    if (!validateMongoDbId(id)) {
+        return res.status(400).json({ error: 'Invalid product ID' });
+    }
 
     try {
         if (title) {
@@ -151,9 +164,15 @@ const updateProduct = asyncHandler(async (req, res) => {
     }
 });
 
-// Controller function to delete a product by ID
+// Delete a product by ID
 const deleteProduct = asyncHandler(async (req, res) => {
     const { id } = req.params;
+
+    // Validate MongoDB ObjectId
+    if (!validateMongoDbId(id)) {
+        return res.status(400).json({ error: 'Invalid product ID' });
+    }
+
     const deletedProduct = await Product.findByIdAndDelete(id);
 
     if (deletedProduct) {
