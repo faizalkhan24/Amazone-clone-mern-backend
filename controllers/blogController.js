@@ -26,11 +26,14 @@ const updateblog = asyncHandler(async (req, res) => {
   }
 });
 
+
+//get blog
+
 const getblog = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
   try {
-    const getblog = await Blog.findById(id);
+    const getblog = await Blog.findById(id).populate("likes");
     const updateViews = await Blog.findByIdAndUpdate(
       id,
       {
@@ -49,6 +52,8 @@ const getblog = asyncHandler(async (req, res) => {
 });
 
 
+//get all blog
+
 const getallblog = asyncHandler(async (req, res) => {
   const { id } = req.params;
   try {
@@ -59,6 +64,7 @@ const getallblog = asyncHandler(async (req, res) => {
   }
 });
 
+//delete blog
 
 const deleteblog = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -71,6 +77,9 @@ const deleteblog = asyncHandler(async (req, res) => {
   }
 });
 
+
+
+//likes the blog
 
 const likesblog = asyncHandler(async (req, res) => {
   const { blogId } = req.body;
@@ -120,6 +129,56 @@ const likesblog = asyncHandler(async (req, res) => {
 
 
 
+//disliked the blog
+
+
+const dislikesblog = asyncHandler(async (req, res) => {
+  const { blogId } = req.body;
+  validateMongoDbId(blogId);
+  const blog = await Blog.findById(blogId);
+  const loginUserId = req?.user?._id;
+  const isDisliked = blog?.dislikes?.includes(loginUserId?.toString());
+
+  if (!blog) {
+    return res.status(404).json({ message: 'Blog not found' });
+  }
+
+  const alreadyLiked = blog?.likes?.includes(loginUserId?.toString());
+
+  if (alreadyLiked) {
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      blogId,
+      {
+        $pull: { likes: loginUserId },
+        isLiked: false,
+      },
+      { new: true }
+    );
+    res.json(updatedBlog);
+  } else if (isDisliked) {
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      blogId,
+      {
+        $pull: { dislikes: loginUserId },
+        isDisliked: false,
+      },
+      { new: true }
+    );
+    res.json(updatedBlog);
+  } else {
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      blogId,
+      {
+        $push: { dislikes: loginUserId },
+        isDisliked: true,
+      },
+      { new: true }
+    );
+    res.json(updatedBlog);
+  }
+});
+
+
 
 
 
@@ -130,4 +189,5 @@ module.exports = {
   getallblog,
   deleteblog,
   likesblog,
+  dislikesblog
 };
