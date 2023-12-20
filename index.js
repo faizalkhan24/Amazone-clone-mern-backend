@@ -5,8 +5,11 @@ const app = express();
 const dotenv = require("dotenv").config();
 const PORT = process.env.PORT || 4000;
 const authRouter = require("./routes/authRoutes");
-const productRoutes = require('./routes/productRoutes');
-const blogRoutes = require('./routes/blogroutes');
+const productRouter = require('./routes/productRoutes');
+const blogRouter = require('./routes/blogroutes');
+// const CategoryRouter = require('./routes/CategoryRoutes');
+const ProdcutCategoryRouter = require('./routes/ProdcutCategoryRoutes');
+
 const { notFound, errorHandler } = require("./middlewares/errorHandle");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
@@ -18,8 +21,12 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
 app.use(cookieParser());
 app.use("/api/user", authRouter);
-app.use("/api/products", productRoutes);
-app.use("/api/blog", blogRoutes);
+app.use("/api/products", productRouter);
+app.use("/api/blog", blogRouter);
+// app.use("/api/Category", CategoryRouter);
+app.use("/api/prod-cat", ProdcutCategoryRouter);
+
+
 
 
 
