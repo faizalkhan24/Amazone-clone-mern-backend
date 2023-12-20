@@ -3,6 +3,8 @@ const Product = require('../models/productModel');
 const asyncHandler = require('express-async-handler');
 const slugify = require("slugify");
 const validateMongoDbId = require("../utils/validateMongodbid");
+const User = require("../models/userModel");
+
 
 // Controller function to create a new product
 const createProduct = asyncHandler(async (req, res) => {
@@ -182,8 +184,35 @@ const deleteProduct = asyncHandler(async (req, res) => {
     }
 });
 
-// Additional controller functions for handling other actions on products
-// ...
+const addToWishlist = asyncHandler(async (req, res) => {
+    const { _id } = req.user;
+    const { proId } = req.body;
+    try {
+        const user =  await User.findById(_id);
+        const alreadyadd = user.wishlist.find((id) => id.toString() === proId);
+        if (alreadyadd) {
+            let user = await User.findByIdAndUpdate(_id, {
+                $pull: { wishlist: proId },
+            },
+                {
+                    new: true,
+                },
+            );
+            res.json(user);
+        } else {
+            let user = await User.findByIdAndUpdate(_id, {
+                $push: { wishlist: proId },
+            },
+                {
+                    new: true,
+                },
+            );
+            res.json(user);
+        }
+    } catch (error) {
+        throw new Error(error);
+    }
+})
 
 module.exports = {
     createProduct,
@@ -191,5 +220,6 @@ module.exports = {
     getProductById,
     updateProduct,
     deleteProduct,
+    addToWishlist
     // Add other controller functions as needed
 };

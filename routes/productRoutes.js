@@ -7,6 +7,7 @@ const {
     getProductById,
     updateProduct,
     deleteProduct,
+    addToWishlist,
     // Add other controllers as needed
 } = require('../controllers/productController');
 
@@ -27,7 +28,6 @@ router.put('/update/:id', authMiddleware, isAdmin, updateProduct);
 // Delete a product by ID
 router.delete('/delete/:id', authMiddleware, isAdmin, deleteProduct);
 
-// Additional routes for other product actions
-// ...
+router.put('/wishlist', authMiddleware, isAdmin, addToWishlist);
 
 module.exports = router;
