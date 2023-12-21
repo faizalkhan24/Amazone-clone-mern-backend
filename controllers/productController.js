@@ -188,7 +188,7 @@ const addToWishlist = asyncHandler(async (req, res) => {
     const { _id } = req.user;
     const { proId } = req.body;
     try {
-        const user =  await User.findById(_id);
+        const user = await User.findById(_id);
         const alreadyadd = user.wishlist.find((id) => id.toString() === proId);
         if (alreadyadd) {
             let user = await User.findByIdAndUpdate(_id, {
@@ -212,7 +212,77 @@ const addToWishlist = asyncHandler(async (req, res) => {
     } catch (error) {
         throw new Error(error);
     }
-})
+});
+
+
+const rating = asyncHandler(async (req, res) => {
+    const { _id } = req.user;
+    const { star, proId, comment } = req.body;
+    try {
+        const product = await Product.findById(proId);
+        let alreadyrated = product.rating.find(
+            (rating) => rating.postedby.toString() === _id.toString()
+        );
+
+        if (alreadyrated) {
+            await Product.findOneAndUpdate(
+                {
+                    "rating.postedby": _id,
+                },
+                {
+                    $set: { "rating.$.star": star, "rating.$.comment": comment },
+                },
+                {
+                    new: true,
+                }
+            );
+
+            const updatedProduct = await Product.findById(proId);
+            res.json({ message: 'Rating updated successfully', product: updatedProduct });
+        } else {
+            const rateproduct = await Product.findByIdAndUpdate(
+                proId,
+                {
+                    $push: {
+                        rating: {
+                            star: star,
+                            comment: comment,
+                            postedby: _id,
+                        },
+                    },
+                },
+                {
+                    new: true,
+                }
+            );
+
+            const getallrating = await Product.findById(proId);
+            let ratingsum = 0;
+
+            for (const rating of getallrating.rating) {
+                ratingsum += rating.star;
+            }
+
+            let actualRating = Math.round(ratingsum / getallrating.rating.length);
+
+            const finalProduct = await Product.findByIdAndUpdate(
+                proId,
+                {
+                    totalrating: actualRating,
+                },
+                {
+                    new: true,
+                }
+            );
+
+            res.json({ message: 'Rating added successfully', product: finalProduct });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 
 module.exports = {
     createProduct,
@@ -220,6 +290,7 @@ module.exports = {
     getProductById,
     updateProduct,
     deleteProduct,
-    addToWishlist
+    addToWishlist,
+    rating
     // Add other controller functions as needed
 };

@@ -8,6 +8,7 @@ const {
     updateProduct,
     deleteProduct,
     addToWishlist,
+    rating,
     // Add other controllers as needed
 } = require('../controllers/productController');
 
@@ -29,5 +30,8 @@ router.put('/update/:id', authMiddleware, isAdmin, updateProduct);
 router.delete('/delete/:id', authMiddleware, isAdmin, deleteProduct);
 
 router.put('/wishlist', authMiddleware, isAdmin, addToWishlist);
+
+router.put('/rating', authMiddleware, isAdmin, rating);
+
 
 module.exports = router;
