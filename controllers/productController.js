@@ -4,7 +4,7 @@ const asyncHandler = require('express-async-handler');
 const slugify = require("slugify");
 const validateMongoDbId = require("../utils/validateMongodbid");
 const User = require("../models/userModel");
-
+const CloudinaryUploadImg = require('../utils/cloudinary.js'); // Include the '.js' extension
 
 // Controller function to create a new product
 const createProduct = asyncHandler(async (req, res) => {
@@ -284,6 +284,42 @@ const rating = asyncHandler(async (req, res) => {
 });
 
 
+const uploadimg = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        validateMongoDbId(id);
+
+        const uploader = (path) => CloudinaryUploadImg(path, "images");
+        const urls = [];
+        const files = req.files;
+
+        for (const file of files) {
+            const { path } = file; // Corrected from `const { path } = files;`
+            const newpath = await uploader(path);
+            urls.push(newpath);
+        }
+
+        const findProduct = await Product.findByIdAndUpdate(
+            id,
+            {
+                images: urls.map((file) => file),
+            },
+            {
+                new: true,
+            }
+        );
+
+        res.json({ message: 'Images uploaded successfully', product: findProduct });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+module.exports = uploadimg;
+
+
 module.exports = {
     createProduct,
     getAllProducts,
@@ -291,6 +327,7 @@ module.exports = {
     updateProduct,
     deleteProduct,
     addToWishlist,
-    rating
+    rating,
+    uploadimg
     // Add other controller functions as needed
 };

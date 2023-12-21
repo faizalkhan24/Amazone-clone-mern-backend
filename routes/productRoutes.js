@@ -9,8 +9,10 @@ const {
     deleteProduct,
     addToWishlist,
     rating,
+    uploadimg,
     // Add other controllers as needed
 } = require('../controllers/productController');
+const { uploadPhoto, ProductImgResize } = require('../middlewares/uploadimg');
 
 // Routes for product actions
 
@@ -32,6 +34,8 @@ router.delete('/delete/:id', authMiddleware, isAdmin, deleteProduct);
 router.put('/wishlist', authMiddleware, isAdmin, addToWishlist);
 
 router.put('/rating', authMiddleware, isAdmin, rating);
+
+router.put('/upload/:id', authMiddleware, isAdmin, uploadPhoto.array('images', 10), ProductImgResize, uploadimg);
 
 
 module.exports = router;
