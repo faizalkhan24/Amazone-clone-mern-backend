@@ -44,9 +44,8 @@ const blogSchema = new mongoose.Schema(
         }
       ],
     // Field for blog image URL
-    images: {
-      type: Array,
-  },
+    images: [],
+
     // Field for blog author
     author: {
       type: String,

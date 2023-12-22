@@ -4,7 +4,8 @@ const asyncHandler = require('express-async-handler');
 const slugify = require("slugify");
 const validateMongoDbId = require("../utils/validateMongodbid");
 const User = require("../models/userModel");
-const CloudinaryUploadImg = require('../utils/cloudinary.js'); // Include the '.js' extension
+const cloudinaryUploadImg = require('../utils/cloudinary');
+const fs = require('fs');
 
 // Controller function to create a new product
 const createProduct = asyncHandler(async (req, res) => {
@@ -284,40 +285,33 @@ const rating = asyncHandler(async (req, res) => {
 });
 
 
-const uploadimg = asyncHandler(async (req, res) => {
+const uploadImages = asyncHandler(async (req, res) => {
     const { id } = req.params;
-
+    validateMongoDbId(id);
     try {
-        validateMongoDbId(id);
-
-        const uploader = (path) => CloudinaryUploadImg(path, "images");
-        const urls = [];
-        const files = req.files;
-
-        for (const file of files) {
-            const { path } = file; // Corrected from `const { path } = files;`
-            const newpath = await uploader(path);
-            urls.push(newpath);
-        }
-
-        const findProduct = await Product.findByIdAndUpdate(
-            id,
-            {
-                images: urls.map((file) => file),
-            },
-            {
-                new: true,
-            }
-        );
-
-        res.json({ message: 'Images uploaded successfully', product: findProduct });
+      const uploader = (path) => cloudinaryUploadImg(path, 'images');
+      const urls = [];
+      const files = req.files;
+      for (const file of files) {
+        const { path } = file;
+        const newPath = await uploader(path);
+        urls.push(newPath);
+        fs.unlinkSync(path);
+      }
+      const findProduct = await Product.findByIdAndUpdate(
+        id,
+        {
+          images: urls.map((file) => {
+            return file;
+          }),
+        },
+        { new: true }
+      );
+      res.json(findProduct);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Internal Server Error' });
+      throw new Error(error);
     }
-});
-
-module.exports = uploadimg;
+  });
 
 
 module.exports = {
@@ -328,6 +322,6 @@ module.exports = {
     deleteProduct,
     addToWishlist,
     rating,
-    uploadimg
+    uploadImages
     // Add other controller functions as needed
 };

@@ -3,8 +3,8 @@ const Blog = require('../models/blogModel');
 const asyncHandler = require("express-async-handler");
 const validateMongoDbId = require("../utils/validateMongodbid");
 const slugify = require("slugify");
-const CloudinaryUploadImg = require('../utils/cloudinary.js'); // Include the '.js' extension
-const fs = require("fs");
+const cloudinaryUploadImg = require('../utils/cloudinary');
+const fs = require('fs');
 
 const createblog = asyncHandler(async (req, res) => {
   try {
@@ -181,37 +181,33 @@ const dislikesblog = asyncHandler(async (req, res) => {
 });
 
 
-const uploadimg = asyncHandler(async (req, res) => {
+const uploadImages = asyncHandler(async (req, res) => {
   const { id } = req.params;
-
+  validateMongoDbId(id);
   try {
-      validateMongoDbId(id);
-
-      const uploader = (path) => CloudinaryUploadImg(path, "images");
-      const urls = [];
-      const files = req.files;
-
-      for (const file of files) {
-          const { path } = file; // Corrected from `const { path } = files;`
-          const newpath = await uploader(path);
-          urls.push(newpath);
-          fs.unlinkSync(path);
+    const uploader = (path) => cloudinaryUploadImg(path, 'images');
+    const urls = [];
+    const files = req.files;
+    for (const file of files) {
+      const { path } = file;
+      const newpath = await uploader(path);
+      urls.push(newpath);
+      fs.unlinkSync(path);
+    }
+    const findBlog = await Blog.findByIdAndUpdate(
+      id,
+      {
+        images: urls.map((file) => {
+          return file;
+        }),
+      },
+      {
+        new: true,
       }
-
-      const findblog = await Blog.findByIdAndUpdate(
-          id,
-          {
-              images: urls.map((file) => file),
-          },
-          {
-              new: true,
-          }
-      );
-
-      res.json({ message: 'Images uploaded successfully', blog: findblog });
+    );
+    res.json(findBlog);
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Internal Server Error' });
+    throw new Error(error);
   }
 });
 
@@ -225,5 +221,5 @@ module.exports = {
   deleteblog,
   likesblog,
   dislikesblog,
-  uploadimg
+  uploadImages
 };

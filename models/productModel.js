@@ -46,9 +46,8 @@ const productSchema = new mongoose.Schema({
     },
 
     // Field for product image URL
-    images: {
-        type: Array,
-    },
+    images: [],
+
     // Additional fields based on your product requirements
 
     color: {
