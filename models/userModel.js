@@ -42,19 +42,18 @@ var userSchema = new mongoose.Schema({
         type: Array,
         default: [],
     },
-    isBlooked :{
+    isBlooked: {
         type: Boolean,
-        default:false
+        default: false
     },
     address: [{
-        type: ObjectId,
-        ref: "Address"
+        type: String
     }],
     wishlist: [{
         type: ObjectId,
         ref: "Product"
     }],
-   
+
     refreshToken: {
         type: String,
     },
@@ -63,14 +62,14 @@ var userSchema = new mongoose.Schema({
     passwordResetExpire: Date,
 
 },
-{
+    {
         timestamps: true,
     }
 );
 
 // Password encryption middleware (pre-save hook)
 userSchema.pre("save", async function (next) {
-    if(!this.isModified("password")){
+    if (!this.isModified("password")) {
         next();
     }
     const salt = await bcrypt.genSaltSync(10);
