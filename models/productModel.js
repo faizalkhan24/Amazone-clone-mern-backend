@@ -48,12 +48,11 @@ const productSchema = new mongoose.Schema({
     // Field for product image URL
     images: [],
 
+
     // Additional fields based on your product requirements
 
-    color: {
-        type: String,
-        enum: ["Black", "Brown", "Red"],
-    },
+    color: [],
+    tags:[],
     rating: [
         {
             star: Number,

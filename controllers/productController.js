@@ -4,52 +4,19 @@ const asyncHandler = require('express-async-handler');
 const slugify = require("slugify");
 const validateMongoDbId = require("../utils/validateMongodbid");
 const User = require("../models/userModel");
-const cloudinaryUploadImg = require('../utils/cloudinary');
+const {cloudinaryUploadImg,cloudinaryDeleteImg} = require('../utils/cloudinary');
 const fs = require('fs');
 
 // Controller function to create a new product
 const createProduct = asyncHandler(async (req, res) => {
     try {
-        const {
-            title,
-            description,
-            price,
-            category,
-            quantity,
-            brand,
-            images,
-            color,
-        } = req.body;
-
-        if (typeof title === 'string' && title.trim() !== '') {
-            req.body.slug = slugify(title);
-        } else {
-            // Handle the case where req.body.title is not a valid string
-            console.error('Invalid title:', title);
-            return res.status(400).json({ error: 'Invalid title' });
+        if (req.body.title) {
+            req.body.slug = slugify(req.body.title);
         }
-
-        // Validate MongoDB ObjectId
-        if (!validateMongoDbId(req.body.brand)) {
-            return res.status(400).json({ error: 'Invalid brand ID' });
-        }
-
-        const newProduct = await Product.create({
-            title,
-            slug: req.body.slug, // Ensure slug is used here
-            description,
-            price,
-            category,
-            quantity,
-            brand: req.body.brand, // Use validated brand ID
-            images,
-            color,
-        });
-
-        res.status(201).json(newProduct);
+        const newProduct = await Product.create(req.body);
+        res.json(newProduct);
     } catch (error) {
-        console.error('Error creating product:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        throw new Error(error);
     }
 });
 
@@ -286,32 +253,36 @@ const rating = asyncHandler(async (req, res) => {
 
 
 const uploadImages = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    validateMongoDbId(id);
+
     try {
-      const uploader = (path) => cloudinaryUploadImg(path, 'images');
-      const urls = [];
-      const files = req.files;
-      for (const file of files) {
-        const { path } = file;
-        const newPath = await uploader(path);
-        urls.push(newPath);
-        fs.unlinkSync(path);
-      }
-      const findProduct = await Product.findByIdAndUpdate(
-        id,
-        {
-          images: urls.map((file) => {
+        const uploader = (path) => cloudinaryUploadImg(path, 'images');
+        const urls = [];
+        const files = req.files;
+        for (const file of files) {
+            const { path } = file;
+            const newPath = await uploader(path);
+            urls.push(newPath);
+            fs.unlinkSync(path);
+        }
+        const images = urls.map((file) => {
             return file;
-          }),
-        },
-        { new: true }
-      );
-      res.json(findProduct);
+        })
+        res.json(images);
     } catch (error) {
-      throw new Error(error);
+        throw new Error(error);
     }
-  });
+});
+
+const deleteImages = asyncHandler(async (req, res) => {
+    const {id} = req.params;
+    try {
+        const deleted = cloudinaryDeleteImg(id, 'images');
+        res.json({message: "deleted"});
+   
+    } catch (error) {
+        throw new Error(error);
+    }
+});
 
 
 module.exports = {
@@ -322,6 +293,7 @@ module.exports = {
     deleteProduct,
     addToWishlist,
     rating,
-    uploadImages
+    uploadImages,
+    deleteImages
     // Add other controller functions as needed
 };
